@@ -1,0 +1,89 @@
+services:
+  be_master_data:
+    container_name: be_master_data
+    restart: always
+    build: .
+    volumes:
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+      - ./app:/var/www/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - APP_NAME=${APP_NAME}
+      - APP_ENV=${APP_ENV}
+      - APP_KEY=${APP_KEY}
+      - APP_DEBUG=${APP_DEBUG}
+      - APP_URL=${APP_URL}
+      - API_URL_CORE=${API_URL_CORE_DOCKER}
+      - APP_FRONTEND_URL=${APP_FRONTEND_URL}
+      - APP_LOCALE=${APP_LOCALE}
+      - APP_FALLBACK_LOCALE=${APP_FALLBACK_LOCALE}
+      - APP_FAKER_LOCALE=${APP_FAKER_LOCALE}
+      - APP_MAINTENANCE_DRIVER=${APP_MAINTENANCE_DRIVER}
+      - PHP_CLI_SERVER_WORKERS=${PHP_CLI_SERVER_WORKERS}
+      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
+      - LOG_CHANNEL=${LOG_CHANNEL}
+      - LOG_STACK=${LOG_STACK}
+      - LOG_DEPRECATIONS_CHANNEL=${LOG_DEPRECATIONS_CHANNEL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_CONNECTION=${DB_CONNECTION}
+      - DB_HOST=${DB_HOST_DOCKER}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SESSION_DRIVER=${SESSION_DRIVER}
+      - SESSION_LIFETIME=${SESSION_LIFETIME}
+      - SESSION_ENCRYPT=${SESSION_ENCRYPT}
+      - SESSION_PATH=${SESSION_PATH}
+      - SESSION_DOMAIN=${SESSION_DOMAIN}
+      - BROADCAST_CONNECTION=${BROADCAST_CONNECTION}
+      - FILESYSTEM_DISK=${FILESYSTEM_DISK}
+      - QUEUE_CONNECTION=${QUEUE_CONNECTION}
+      - CACHE_STORE=${CACHE_STORE}
+      - MEMCACHED_HOST=${MEMCACHED_HOST}
+    networks:
+      - be_master_data_network
+      - global_backend_network
+
+  be_master_data_nginx:
+    image: nginx:1.27.3-alpine-slim
+    container_name: be_master_data_nginx
+    restart: always
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8000:80"
+    depends_on:
+      - be_master_data
+    networks:
+      - be_master_data_network
+      - global_backend_network
+
+  be_master_data_db:
+    image: postgres:17.2
+    container_name: be_master_data_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    volumes:
+      - postgresmasterdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - be_master_data_network
+
+volumes:
+  postgresmasterdata: {}
+
+networks:
+  be_master_data_network:
+    driver: bridge
+  global_backend_network:
+    external: true
