@@ -58,6 +58,82 @@ describe('Service List Branch', function () {
         ]);
     });
 
+    it('should search branches by name and code only', function () {
+        // Create test branches
+        Branch::factory()->create([
+            'code' => 'BR001',
+            'name' => 'Jakarta Branch',
+            'alamat' => 'Jl. Sudirman No. 1',
+            'phone' => '021-1234567'
+        ]);
+
+        Branch::factory()->create([
+            'code' => 'BR002',
+            'name' => 'Surabaya Branch',
+            'alamat' => 'Jl. Thamrin No. 2',
+            'phone' => '031-7654321'
+        ]);
+
+        Branch::factory()->create([
+            'code' => 'BR003',
+            'name' => 'Bandung Branch',
+            'alamat' => 'Jl. Asia Afrika No. 3',
+            'phone' => '022-1111111'
+        ]);
+
+        // Test search by name
+        $response = $this->getJson('/api/master/branch?search=Jakarta');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+        expect($responseData['data'][0]['name'])->toBe('Jakarta Branch');
+
+        // Test search by code
+        $response = $this->getJson('/api/master/branch?search=BR002');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+        expect($responseData['data'][0]['code'])->toBe('BR002');
+
+        // Test search that should not find by alamat or phone
+        $response = $this->getJson('/api/master/branch?search=Sudirman');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(0);
+
+        $response = $this->getJson('/api/master/branch?search=1234567');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(0);
+    });
+
+    it('should search with case insensitive', function () {
+        Branch::factory()->create([
+            'code' => 'BR001',
+            'name' => 'Jakarta Branch',
+        ]);
+
+        // Test case insensitive search - should work with any case
+        $response = $this->getJson('/api/master/branch?search=jakarta');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+
+        $response = $this->getJson('/api/master/branch?search=JAKARTA');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+
+        $response = $this->getJson('/api/master/branch?search=br001');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+
+        $response = $this->getJson('/api/master/branch?search=BR001');
+        $response->assertStatus(200);
+        $responseData = $response->json();
+        expect($responseData['data'])->toHaveCount(1);
+    });
 
 });
 

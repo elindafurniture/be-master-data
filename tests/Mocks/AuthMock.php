@@ -44,7 +44,14 @@ trait AuthMock
 
             public function handle($request, $next)
             {
-                $request->setUserResolver(fn() => $this->profile);
+                // Set user resolver dengan struktur yang sesuai dengan middleware yang sudah diperbaiki
+                $request->setUserResolver(function () {
+                    return (object) [
+                        'id' => $this->profile->profile->id,
+                        'name' => $this->profile->profile->name,
+                        'email' => $this->profile->profile->email
+                    ];
+                });
                 return $next($request);
             }
         });

@@ -1,4 +1,4 @@
-FROM php:8.3.22-fpm
+FROM php:8.2-fpm
 
 # Install dependencies untuk Laravel dan pustaka yang diperlukan untuk mbstring
 RUN apt-get update && apt-get install -y \

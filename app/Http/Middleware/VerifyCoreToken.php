@@ -31,7 +31,13 @@ class VerifyCoreToken
 
         // Set custom user resolver agar Auth::user() bisa digunakan
         $request->setUserResolver(function () use ($response) {
-            return (object) $response->json(); // misalnya return object { id, name, email }
+            $responseData = $response->json();
+            $profile = $responseData['profile'];
+            return (object) [
+                'id' => $profile['id'],
+                'name' => $profile['name'],
+                'email' => $profile['email']
+            ];
         });
 
         return $next($request);

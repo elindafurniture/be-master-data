@@ -19,10 +19,8 @@ class BranchService
 
         if (filled(trim($request->search))) {
             $data = $data->where(function ($query) use ($request) {
-                $query->where('name', 'like', '%' . trim($request->search) . '%')
-                      ->orWhere('code', 'like', '%' . trim($request->search) . '%')
-                      ->orWhere('alamat', 'like', '%' . trim($request->search) . '%')
-                      ->orWhere('phone', 'like', '%' . trim($request->search) . '%');
+                $query->whereRaw('name ILIKE ?', ['%' . trim($request->search) . '%'])
+                      ->orWhereRaw('code ILIKE ?', ['%' . trim($request->search) . '%']);
             });
         }
 
@@ -67,8 +65,8 @@ class BranchService
 
             // Set audit fields
             $user = $request->user();
-            $branch->created_by = $user ? $user->profile->id : 0;
-            $branch->created_by_name = $user ? $user->profile->name : 'System';
+            $branch->created_by = $user ? $user->id : 0;
+            $branch->created_by_name = $user ? $user->name : 'System';
 
             $branch->save();
 
@@ -112,23 +110,37 @@ class BranchService
             $branch->phone = $request->phone;
             $branch->pic_id = $request->pic_id;
 
-            // Handle logo upload if provided
-            if ($request->hasFile('logo')) {
-                // Delete old logo if exists
+            // Handle logo upload based on status_upload from request body
+            $statusUpload = $request->input('status_upload', 0);
+            
+            if ($statusUpload == 1) {
+                // New upload - delete old logo and upload new one
                 if ($branch->logo) {
                     Storage::disk('public')->delete($branch->logo);
                 }
                 
-                $file = $request->file('logo');
-                $fileName = time() . '_' . uniqid() . '_' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
-                $logoPath = $file->storeAs('branch-logos', $fileName, 'public');
-                $branch->logo = $logoPath;
+                if ($request->hasFile('logo')) {
+                    $file = $request->file('logo');
+                    $fileName = time() . '_' . uniqid() . '_' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
+                    $logoPath = $file->storeAs('branch-logos', $fileName, 'public');
+                    $branch->logo = $logoPath;
+                }
             }
+            
+            if ($statusUpload == 2) {
+                // Delete existing logo
+                if ($branch->logo) {
+                    Storage::disk('public')->delete($branch->logo);
+                }
+                $branch->logo = null;
+            }
+            
+            // If status_upload is 0, no change to logo
 
             // Set audit fields
             $user = $request->user();
-            $branch->updated_by = $user ? $user->profile->id : 0;
-            $branch->updated_by_name = $user ? $user->profile->name : 'System';
+            $branch->updated_by = $user ? $user->id : 0;
+            $branch->updated_by_name = $user ? $user->name : 'System';
 
             $branch->save();
 
@@ -161,8 +173,8 @@ class BranchService
 
             // Set audit fields
             $user = $request->user();
-            $branch->deleted_by = $user ? $user->profile->id : 0;
-            $branch->deleted_by_name = $user ? $user->profile->name : 'System';
+            $branch->deleted_by = $user ? $user->id : 0;
+            $branch->deleted_by_name = $user ? $user->name : 'System';
             $branch->deleted_status = null;
 
             $branch->save();
