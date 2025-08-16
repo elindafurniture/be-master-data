@@ -65,8 +65,10 @@ describe('Service Store Branch', function () {
         $response->assertStatus(200);
 
         $responseData = $response->json();
-        expect($responseData['code'])->toBe('BR');
-        expect($responseData['name'])->toBe('Main Branch');
+        expect($responseData['status'])->toBe('success');
+        expect($responseData['message'])->toBe('Branch created successfully');
+        expect($responseData['data']['code'])->toBe('BR');
+        expect($responseData['data']['name'])->toBe('Main Branch');
 
         // Cek database juga
         $this->assertDatabaseHas('branches', [
